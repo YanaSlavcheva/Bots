@@ -39,11 +39,11 @@
                 var replyMessageStringBuilder = new StringBuilder();
                 if (!haveAskedForUsername)
                 {
-                    replyMessageStringBuilder.Append($"Hello, I am **ZaraCodeWeek** Bot");
+                    replyMessageStringBuilder.Append($"Hello, I am **ZaraCodeWeek** Bot.");
                     replyMessageStringBuilder.Append($"\n");
                     replyMessageStringBuilder.Append($"You can say anything");
                     replyMessageStringBuilder.Append($"\n");
-                    replyMessageStringBuilder.Append($"to me and I will repeat it back");
+                    replyMessageStringBuilder.Append($"to me and I will repeat it back.");
                     replyMessageStringBuilder.Append($"\n\n");
                     replyMessageStringBuilder.Append($"What is your name?");
 
@@ -95,8 +95,27 @@
         {
             if (message.Type == ActivityTypes.DeleteUserData)
             {
-                // Implement user deletion here
-                // If we handle user deletion, return a real message
+                // Get BotUserData
+                var stateClient = message.GetStateClient();
+                var userData = stateClient.BotState.GetPrivateConversationData(
+                    message.ChannelId,
+                    message.Conversation.Id,
+                    message.From.Id);
+
+                // Set BotUserData
+                userData.SetProperty<string>(KeyUsernameString, string.Empty);
+                userData.SetProperty<bool>(KeyAskedForUsernameString, false);
+
+                // Save BotUserData
+                stateClient.BotState.SetPrivateConversationData(
+                    message.ChannelId,
+                    message.Conversation.Id,
+                    message.From.Id,
+                    userData);
+
+                // Create a reply message
+                var replyMessage = message.CreateReply("Personal data has been deleted.");
+                return replyMessage;
             }
             else if (message.Type == ActivityTypes.ConversationUpdate)
             {
