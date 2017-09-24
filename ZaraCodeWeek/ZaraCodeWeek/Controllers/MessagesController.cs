@@ -1,4 +1,6 @@
-﻿namespace ZaraCodeWeek.Controllers
+﻿using System;
+
+namespace ZaraCodeWeek.Controllers
 {
     using System.Net;
     using System.Net.Http;
@@ -18,11 +20,18 @@
         {
             if (activity.Type == ActivityTypes.Message)
             {
-                await Conversation.SendAsync(activity, () => new Dialogs.RootDialog());
+                var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+
+                // calculate something for us to return
+                var length = (activity.Text ?? string.Empty).Length;
+
+                // return our reply to the user
+                var reply = activity.CreateReply($"Hello there! You sent {length} characters.");
+                await connector.Conversations.ReplyToActivityAsync(reply);
             }
             else
             {
-                HandleSystemMessage(activity);
+                this.HandleSystemMessage(activity);
             }
 
             var response = Request.CreateResponse(HttpStatusCode.OK);
