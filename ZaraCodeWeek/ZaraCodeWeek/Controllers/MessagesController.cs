@@ -1,12 +1,15 @@
 ﻿namespace ZaraCodeWeek.Controllers
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.Bot.Connector;
+    using Newtonsoft.Json;
 
     [BotAuthentication]
     public class MessagesController : ApiController
@@ -59,7 +62,46 @@
                     }
                     else
                     {
-                        replyMessageStringBuilder.Append($"{username}, you said: {activity.Text}");
+                        if (activity.Text.ToLower() == "gimme quote")
+                        {
+                            using (var httpClient = new HttpClient())
+                            {
+                                var url = "http://yanaslavcheva-001-site8.btempurl.com/api/quotes/random";
+                                var result = httpClient.GetStringAsync(url).GetAwaiter().GetResult();
+                                if (!string.IsNullOrWhiteSpace(result))
+                                {
+                                    var quote = JsonConvert.DeserializeObject<QuoteDto>(result);
+                                    replyMessageStringBuilder.Append($"\"{quote.Content}\" by {quote.Author}");
+                                }
+                            }
+                        }
+                        else if (activity.Text.ToLower().StartsWith("gimme gif"))
+                        {
+                            var keyWord = activity
+                                .Text
+                                .Split(new string[] { "gimme gif" }, StringSplitOptions.RemoveEmptyEntries)
+                                .FirstOrDefault()
+                                ?.Trim();
+
+                            var url = $"https://api.tenor.com/v1/search?q={keyWord}&key=LIVDSRZULELA";
+
+                            using (var httpClient = new HttpClient())
+                            {
+                                var result = httpClient.GetStringAsync(url).GetAwaiter().GetResult();
+                                if (!string.IsNullOrWhiteSpace(result))
+                                {
+                                    var gifs = JsonConvert.DeserializeObject<GifsDto>(result);
+
+                                    var gif = gifs.Results.OrderBy(x => Guid.NewGuid()).FirstOrDefault();
+
+                                    replyMessageStringBuilder.Append(gif?.Url ?? "No gifs found.");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            replyMessageStringBuilder.Append($"{username}, you said: {activity.Text}");
+                        }
                     }
                 }
 
@@ -138,5 +180,24 @@
 
             return null;
         }
+    }
+
+    class QuoteDto
+    {
+        public int Id { get; set; }
+
+        public string Author { get; set; }
+
+        public string Content { get; set; }
+    }
+
+    class GifsDto
+    {
+        public IEnumerable<GifDto> Results { get; set; }
+    }
+
+    class GifDto
+    {
+        public string Url { get; set; }
     }
 }
